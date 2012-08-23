@@ -225,6 +225,58 @@
 		inc vic.cr1
 		sta vic.cr1
 		
+		; Display a red border at the start of linecrunch.
+		lda #vic.RED
+		sta vic.border
+		
+		; The number of lines to crunch.
+		ldy y
+		beq skip_crunch
+		
+		; The raster line to start crunching on
+		ldx #67
+		
+		{
+			; Load the next screen value
+			lda table-67,x
+			
+			; Wait for the line
+			{
+				cpx vic.raster
+				bne _cont
+			}
+			
+			; Crunch one line (timing-critical)
+			sta vic.cr1
+			
+			inx
+			dey
+			bne _cont
+		}
+		
+		; Display green until the screen is enabled
+		lda #vic.GREEN
+		sta vic.border
+		
+		skip_crunch:
+		
+		; Prepare to enable the screen
+		lda vic.cr1
+		and #%00011111
+		
+		; Wait for this raster line
+		ldx #67+26
+		{
+			cpx vic.raster
+			bne _cont
+		}
+		
+		; Enable the screen
+		sta vic.cr1
+		
+		lda #vic.BLACK
+		sta vic.border
+		
 		; Acknowledge the IRQ
 		lda #1
 		sta vic.irqstatus
@@ -233,13 +285,17 @@
 		cli
 		
 		inc x
-		lda x
+		ldx x
+		txa
 		sec
 		sbc #40
 		{
 			bne _break
 			sta x
 		}
+		txa
+		lsr
+		sta y
 		
 		; Restore registers
 		pla
@@ -253,4 +309,41 @@
 	
 	x: .byte $00
 	y: .byte $00
+	
+	table:
+	.byte %01111100
+	.byte %01111101
+	.byte %01111110
+	.byte %01111111
+	.byte %01111000
+	.byte %01111001
+	.byte %01111010
+	.byte %01111011
+
+	.byte %01111100
+	.byte %01111101
+	.byte %01111110
+	.byte %01111111
+	.byte %01111000
+	.byte %01111001
+	.byte %01111010
+	.byte %01111011
+
+	.byte %01111100
+	.byte %01111101
+	.byte %01111110
+	.byte %01111111
+	.byte %01111000
+	.byte %01111001
+	.byte %01111010
+	.byte %01111011
+
+	.byte %01111100
+	.byte %01111101
+	.byte %01111110
+	.byte %01111111
+	.byte %01111000
+	.byte %01111001
+	.byte %01111010
+	.byte %01111011
 }
